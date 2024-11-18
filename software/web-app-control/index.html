@@ -172,7 +172,7 @@ class BLERobot {
             this.device = await navigator.bluetooth.requestDevice({
                 //filters: [{ services: [this.BLE_SERVICE_UUID] }],
                  acceptAllDevices: true,
-                // optionalServices: [this.BLE_SERVICE_UUID],
+                 optionalServices: [this.BLE_SERVICE_UUID],
             })
             this.device.addEventListener('gattserverdisconnected', () => {
                 this._connected = false
