@@ -131,9 +131,9 @@ class BLERobot {
         const server = await this.device.gatt.connect()
         this.service = await server.getPrimaryService(this.BLE_SERVICE_UUID)
         this.characteristic = await this.service.getCharacteristic(this.BLE_CHARACTERISTIC_UUID)
-         const characteristics = await service.getCharacteristics();
-        this.server = server
-        debugClear()
+        const characteristics = await this.service.getCharacteristics();
+        this.server = server;
+        debugClear();
         debug(`Prisijungiau prie roboto „${this.device.name}“`) 
 // Log all characteristics and their permissions
         for (const characteristic of this.characteristics) {
