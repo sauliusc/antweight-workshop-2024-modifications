@@ -136,7 +136,7 @@ class BLERobot {
         debugClear();
         debug(`Prisijungiau prie roboto „${this.device.name}“`) 
 // Log all characteristics and their permissions
-        for (const characteristic of this.characteristics) {
+        this.characteristics.forEach((characteristic) => {
             const permissions = [];
             if (characteristic.properties.read) permissions.push("READ");
             if (characteristic.properties.write) permissions.push("WRITE");
@@ -145,8 +145,7 @@ class BLERobot {
 
             debug(`Characteristic UUID: ${characteristic.uuid}`);
             debug(`Permissions: ${permissions.join(", ")}`);
-        }
-
+        });
         this.name = this.device.name
         connectBtn.textContent = this.name
         this._connected = true
