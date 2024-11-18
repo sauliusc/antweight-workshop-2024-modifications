@@ -131,21 +131,12 @@ class BLERobot {
         const server = await this.device.gatt.connect()
         this.service = await server.getPrimaryService(this.BLE_SERVICE_UUID)
         this.characteristic = await this.service.getCharacteristic(this.BLE_CHARACTERISTIC_UUID)
-        const characteristics = await this.service.getCharacteristics();
         this.server = server;
         debugClear();
         debug(`Prisijungiau prie roboto „${this.device.name}“`) 
-// Log all characteristics and their permissions
-        this.characteristics.forEach((characteristic) => {
-            const permissions = [];
-            if (characteristic.properties.read) permissions.push("READ");
-            if (characteristic.properties.write) permissions.push("WRITE");
-            if (characteristic.properties.notify) permissions.push("NOTIFY");
-            if (characteristic.properties.indicate) permissions.push("INDICATE");
-
-            debug(`Characteristic UUID: ${characteristic.uuid}`);
-            debug(`Permissions: ${permissions.join(", ")}`);
-        });
+        debug(this.service);
+        debug(this.characteristic);
+        debug(this.service.getCharacteristics());
         this.name = this.device.name
         connectBtn.textContent = this.name
         this._connected = true
