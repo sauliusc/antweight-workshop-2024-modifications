@@ -170,8 +170,8 @@ class BLERobot {
         try {
             clearTimeout(this.periodicReconnectTimer)
             this.device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: [this.BLE_SERVICE_UUID] }],
-                // acceptAllDevices: true,
+                //filters: [{ services: [this.BLE_SERVICE_UUID] }],
+                 acceptAllDevices: true,
                 // optionalServices: [this.BLE_SERVICE_UUID],
             })
             this.device.addEventListener('gattserverdisconnected', () => {
