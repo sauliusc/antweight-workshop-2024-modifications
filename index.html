@@ -142,7 +142,7 @@ class BLERobot {
         const hasRead = this.characteristic.properties.read;
         const hasWrite = this.characteristic.properties.write;
 
-        debug(`READ: ${hnsole.loasRead ? "Yes" : "No"}`);
+        debug(`READ: ${hasRead ? "Yes" : "No"}`);
         debug(`WRITE: ${hasWrite ? "Yes" : "No"}`);
         
         this.name = this.device.name
