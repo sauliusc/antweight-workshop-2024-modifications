@@ -142,9 +142,8 @@ class BLERobot {
         const hasRead = this.characteristic.properties.read;
         const hasWrite = this.characteristic.properties.write;
 
-        console.log(`  Permissions:`);
-        console.log(`    READ: ${hasRead ? "Yes" : "No"}`);
-        console.log(`    WRITE: ${hasWrite ? "Yes" : "No"}`);
+        debug(`READ: ${hnsole.loasRead ? "Yes" : "No"}`);
+        debug(`WRITE: ${hasWrite ? "Yes" : "No"}`);
         
         this.name = this.device.name
         connectBtn.textContent = this.name
@@ -182,7 +181,7 @@ class BLERobot {
         try {
             clearTimeout(this.periodicReconnectTimer)
             this.device = await navigator.bluetooth.requestDevice({
-                //filters: [{ services: [this.BLE_SERVICE_UUID] }],
+                filters: [{ services: [this.BLE_SERVICE_UUID] }],
                  acceptAllDevices: true,
                  optionalServices: [this.BLE_SERVICE_UUID],
             })
