@@ -134,9 +134,13 @@ class BLERobot {
         this.server = server;
         debugClear();
         debug(`Prisijungiau prie roboto „${this.device.name}“`) 
-        debug(this.service);
-        debug(this.characteristic);
-        debug(this.service.getCharacteristics());
+        debug(this.service.uuid);
+        debug(this.characteristic.uuid);
+
+        const characteristics = await service.getCharacteristics();
+        debug(`Found ${characteristics.length} characteristic(s) for service ${service.uuid}:`);
+
+        
         this.name = this.device.name
         connectBtn.textContent = this.name
         this._connected = true
