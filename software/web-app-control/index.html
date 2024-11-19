@@ -134,11 +134,11 @@ class BLERobot {
         this.server = server;
         debugClear();
         debug(`Prisijungiau prie roboto „${this.device.name}“`) 
-        debug(this.service.uuid);
-        debug(this.characteristic.uuid);
+        debug(`Service: ${this.service.uuid}`);
+        debug(`Characteristic: ${this.characteristic.uuid}`);
 
-        const characteristics = await service.getCharacteristics();
-        debug(`Found ${characteristics.length} characteristic(s) for service ${service.uuid}:`);
+        const characteristics = await this.service.getCharacteristics();
+        debug(`Found ${characteristics.length} characteristic(s) for service ${this.service.uuid}:`);
 
         
         this.name = this.device.name
