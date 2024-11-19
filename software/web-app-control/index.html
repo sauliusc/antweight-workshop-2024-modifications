@@ -139,7 +139,12 @@ class BLERobot {
 
         const characteristics = await this.service.getCharacteristics();
         debug(`Found ${characteristics.length} characteristic(s) for service ${this.service.uuid}:`);
+        const hasRead = this.characteristic.properties.read;
+        const hasWrite = this.characteristic.properties.write;
 
+        console.log(`  Permissions:`);
+        console.log(`    READ: ${hasRead ? "Yes" : "No"}`);
+        console.log(`    WRITE: ${hasWrite ? "Yes" : "No"}`);
         
         this.name = this.device.name
         connectBtn.textContent = this.name
