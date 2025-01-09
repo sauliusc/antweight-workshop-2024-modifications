@@ -222,7 +222,8 @@ class BLERobot {
     }
 
     async _send() {
-        const cmd = `ML${this.left} MR${this.right} SL${this.servoLeft} SR${this.servoRight}`
+        //const cmd = `ML${this.left} MR${this.right} SL${this.servoLeft} SR${this.servoRight}`
+        const cmd = `ML${this.left} MR${this.right} SL${this.servoLeft}`
         cmdStatusEl.textContent = cmd
 
         if (this.connected) {
