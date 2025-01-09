@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>KMS Antweight Control 2024</title>
+        <title>Marsaeigio valdymas</title>
         <style>
             body {
                 display: flex;
@@ -17,17 +17,6 @@
                 background-image: url("bg.jpg"); /* image downloaded 2024-10-18 from https://wallpaperaccess.com/full/808550.jpg */
                 font-size: 16px;
                 user-select: none;
-            }
-            #joystick { display: block; margin: 2rem; }
-            #servo-left, #servo-right {
-                position: absolute;
-                top: 25vh;
-                right: 40px;
-                height: 50vh;
-                writing-mode: vertical-lr;
-            }
-            #servo-left {
-                right: 80px;
             }
             #debug {
                 flex-grow: 1;
@@ -73,16 +62,6 @@
                 body {
                     flex-direction: column-reverse;
                 }
-                #servo-left {
-                    right: 60px;
-                }
-                #servo-right {
-                    right: 20px;
-                }
-                #servo-left, #servo-right {
-                    top: 150px;
-                    height: 30vh;
-                }
                 #debug {
                     margin-right: 70px;
                 }
@@ -90,18 +69,18 @@
         </style>
     </head>
     <body>
-        <canvas id="joystick"></canvas>
         <div id="debug"></div>
-        <div id="servo-controls">
-            <input type="range" value="0" min="0" max="180" step="1" id="servo-left">
-            <input type="range" value="0" min="0" max="180" step="1" id="servo-right">
-        </div>
         <div class="buttons">
             <span class="cmd-status">M0,0</span>
             <button disabled class="connect-btn btn" onclick="connectBLE()">Prisijungti</button>
             <button class="fullscreen-btn btn" title="Go fullscreen">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"/></svg>
             </button>
+        </div>
+        <div id="controlbuttons">
+            <button class="connect-btn btn" onclick="sendBLECmd('alert')">Avarinis</button>
+            <button class="connect-btn btn" onclick="sendBLECmd('getready')">Pasiruošk</button>
+            <button class="connect-btn btn" onclick="sendBLECmd('fire')">Pulk</button>
         </div>
 
         <script>
@@ -124,7 +103,6 @@ class BLERobot {
         this.encoder = new TextEncoder()
 
         this._connected = false
-        this._periodicSending()
     }
 
     async _connect() {
@@ -161,22 +139,6 @@ class BLERobot {
         }
     }
 
-    async _periodicSending() {
-        let delay = 0
-        try {
-            if (!await this._send()) {
-                // not connected, slow down
-                delay = 100
-            }
-        }
-        catch (e) {
-            debug('Klaida siunčiant komandą: ', e)
-        }
-        finally {
-            setTimeout(() => this._periodicSending(), delay)
-        }
-    }
-
     async connect() {
         try {
             clearTimeout(this.periodicReconnectTimer)
@@ -208,22 +170,7 @@ class BLERobot {
         }
     }
 
-    setSpeed(left, right) {
-        this.left = left
-        this.right = right
-    }
-    
-    setServoLeft(deg) {
-        this.servoLeft = deg
-    }
-    
-    setServoRight(deg) {
-        this.servoRight = deg
-    }
-
-    async _send() {
-        //const cmd = `ML${this.left} MR${this.right} SL${this.servoLeft} SR${this.servoRight}`
-        const cmd = `ML${this.left} MR${this.right} SL${this.servoLeft}`
+    async _send(cmd) {
         cmdStatusEl.textContent = cmd
 
         if (this.connected) {
@@ -246,114 +193,6 @@ async function checkRequirements() {
     }
     connectBtn.disabled = false
     debug("Labas! Spausk „Prisijungti“ ir prisijunk prie savo roboto.")
-}
-
-function setupJoystick(robot) {
-    const joystick = document.getElementById('joystick')
-    const ctx = joystick.getContext('2d')
-    let radius, radiusToEdge, centerX, centerY
-
-    function updateBaseParams() {
-        const docH = document.body.clientHeight
-        const docW = document.body.clientWidth
-        const sidePx = docH > docW ? docW : docH
-        joystick.width = sidePx
-        joystick.height = sidePx
-        radius = Math.min(joystick.width, joystick.height) / 2
-        radiusDot = radius / 4
-        radiusToEdge = radius - radiusDot
-        centerX = joystick.width / 2
-        centerY = joystick.height / 2
-    }
-
-    function drawJoystick(indicatorX = centerX, indicatorY = centerY) {
-        ctx.clearRect(0, 0, joystick.width, joystick.height)
-        ctx.beginPath()
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-        ctx.fillStyle = 'white'
-        ctx.fill()
-        ctx.closePath()
-
-        ctx.beginPath()
-        ctx.arc(indicatorX, indicatorY, radiusDot, 0, Math.PI * 2)
-        ctx.fillStyle = 'red'
-        ctx.fill()
-        ctx.closePath()
-    }
-
-    function updateJoystick(eventX, eventY) {
-        const rect = joystick.getBoundingClientRect()
-        let x = eventX - rect.left
-        let y = eventY - rect.top
-        const dx = x - centerX
-        const dy = y - centerY
-        
-        const distance = Math.sqrt(dx * dx + dy * dy)
-        const mag = distance / radiusToEdge
-
-        let jx = (dx / radiusToEdge) * 255
-        let jy = -(dy / radiusToEdge) * 255
-
-        left = jy + jx
-        right = jy - jx
-        left = left * mag
-        right = right * mag
-        left = Math.max(-255, Math.min(255, Math.round(left)))
-        right = Math.max(-255, Math.min(255, Math.round(right)))
-        
-        robot.setSpeed(left, right)
-        drawJoystick(x, y)
-    }
-
-    joystick.addEventListener('mousemove', (event) => {
-        if (event.buttons === 1) {
-            updateJoystick(event.clientX, event.clientY)
-        }
-    })
-    joystick.addEventListener('mouseup', (event) => {
-        drawJoystick()
-        robot.setSpeed(0, 0)
-    })
-    joystick.addEventListener('touchmove', (event) => {
-        for (let i = 0, len = event.touches.length; i < len; i++) {
-            const touch = event.touches[i]
-            if (touch.target == joystick) {
-                updateJoystick(touch.clientX, touch.clientY)
-            }
-        }
-    })
-
-    joystick.addEventListener('touchend', () => {
-        drawJoystick()
-        robot.setSpeed(0, 0)
-    });
-
-    screen.orientation.addEventListener('change', () => {
-        updateBaseParams()
-        drawJoystick()
-    })
-    
-    updateBaseParams()
-    drawJoystick()
-}
-
-function setupServoControl(robot) {
-    const servoLeftEl = document.getElementById('servo-left')
-    const servoRightEl = document.getElementById('servo-right')
-
-    servoLeftEl.value = localStorage.servoLeft || 0
-    servoRightEl.value = localStorage.servoRight || 0
-    robot.setServoLeft(servoLeftEl.value)
-    robot.setServoRight(servoRightEl.value)
-
-    servoLeftEl.addEventListener('input', (e) => {
-        robot.setServoLeft(e.target.value)
-        localStorage.servoLeft = e.target.value
-    })
-    servoRightEl.addEventListener('input', (e) => {
-        robot.setServoRight(e.target.value)
-        localStorage.servoRight = e.target.value
-    })
 }
 
 function setupFullscreenControl() {
@@ -390,9 +229,13 @@ function connectBLE() {
     robot.connect()
 }
 
+function sendBLECmd(cmd) {
+    //if (robot.connected) {
+        robot._send(cmd)
+    //}
+}
+
 checkRequirements()
-setupServoControl(robot)
-setupJoystick(robot)
 setupFullscreenControl()
 
 window.addEventListener("beforeunload", (event) => {
