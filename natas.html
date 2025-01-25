@@ -1,248 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Marsaeigio valdymas</title>
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marsaeigio valdymas</title>
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            background-position-x: right;
+            background-position-y: 50%;
+            background-repeat: space;
+            background-size: cover;
+            background-image: url("bg2.jpg");
+            font-size: 16px;
+            user-select: none;
+        }
+
+        #debug {
+            flex-grow: 1;
+            padding: 1rem;
+            padding-top: 3rem;
+            overflow: auto;
+            color: black;
+            font-family: monospace;
+            word-break: break-all;
+            font-weight: bold;
+            margin-right: 30px;
+        }
+
+        #debug > * {
+            display: list-item;
+            list-style-type: disc;
+            font-size: 14px;
+        }
+
+        svg {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            fill: white;
+        }
+
+        .buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+
+        .buttons > button {
+            height: 2rem;
+            display: inline-block;
+            padding: 0 5px;
+            margin: 0 5px;
+            font-size: large;
+            font-weight: bold;
+            background: black;
+            color: #fff;
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        .cmd-status {
+            display: inline-block;
+            color: black;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight:bold;
+        }
+
+        #controlbuttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            right: 5%;
+            transform: translateY(-50%);
+        }
+
+        #controlbuttons button {
+            font-size: large;
+            font-weight: bold;
+            height: 2.5rem;
+            margin: 0.5rem 0;
+            background: black;
+            color: white;
+            cursor: pointer;
+            border: 1px solid white;
+            border-radius: 5px;
+        }
+
+        @media screen and (orientation: portrait) {
             body {
-                display: flex;
-                height: 100vh;
-                margin: 0; 
-                background-color: black;
-                background-position-x: right;
-                background-position-y: 50%;
-                background-repeat: space;
-                background-size: cover;
-                background-image: url("bg.jpg"); /* image downloaded 2024-10-18 from https://wallpaperaccess.com/full/808550.jpg */
-                font-size: 16px;
-                user-select: none;
+                flex-direction: column-reverse;
             }
+
             #debug {
-                flex-grow: 1;
-                padding: 1rem;
-                padding-top: 3rem;
-                overflow: auto;
-                color: green;
-                font-family: monospace;
-                word-break: break-all;
-                margin-right: 30px;
+                margin-right: 70px;
             }
-            #debug > * {
-                display: list-item;
-                list-style-type: disc;
-                font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="debug"></div>
+    <div class="buttons">
+        <span class="cmd-status">M0,0</span>
+        <button class="connect-btn btn" onclick="connectBLE()">Prisijungti</button>
+        <button class="fullscreen-btn btn" title="Go fullscreen">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"/>
+            </svg>
+        </button>
+    </div>
+    <div id="controlbuttons">
+        <button class="connect-btn btn" onclick="sendBLECmd('alert')">Avarinis</button>
+        <button class="connect-btn btn" onclick="sendBLECmd('getready')">Pasiruošk</button>
+        <button class="connect-btn btn" onclick="sendBLECmd('fire')">Pulk</button>
+    </div>
+
+    <script>
+        const cmdStatusEl = document.querySelector('.cmd-status');
+        const connectBtn = document.querySelector('.connect-btn');
+        const debugEl = document.getElementById('debug');
+
+        class BLERobot {
+            constructor() {
+                this.device = null;
+                this.service = null;
+                this.characteristic = null;
+                this.encoder = new TextEncoder();
+                this.connected = false;
             }
-            svg {
-                width: 1em;
-                height: 1em;
-                vertical-align: -0.125em;
-                fill: white;
-            }
-            .buttons { position: absolute; top: 10px; right: 10px; z-index: 1000; }
-            .buttons > button {
-                height: 2rem;
-                display: inline-block;
-                padding: 0 5px;
-                margin: 0 5px;
-                font-size: large;
-                font-weight: bold;
-                background: black;
-                color: #fff;
-                z-index: 1000;
-                cursor: pointer;
-            }
-            .cmd-status {
-                display: inline-block;
-                color: green;
-                font-family: monospace;
-                font-size: 14px;
-            }
-            @media screen and (orientation: portrait) {
-                body {
-                    flex-direction: column-reverse;
+
+            async connect() {
+                try {
+                    this.device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: ["99b96fd7-dd0e-49cd-b255-f7b692c3de5e"]
+                    });
+
+                    const server = await this.device.gatt.connect();
+                    this.service = await server.getPrimaryService("99b96fd7-dd0e-49cd-b255-f7b692c3de5e");
+                    this.characteristic = await this.service.getCharacteristic("4fce1dff-9151-498f-aa72-581f3f9241f3");
+                    this.connected = true;
+
+                    debug("Connected to device:", this.device.name);
+                } catch (error) {
+                    debug("Failed to connect:", error);
                 }
-                #debug {
-                    margin-right: 70px;
+            }
+
+            async sendCommand(cmd) {
+                if (this.connected) {
+                    const data = this.encoder.encode(cmd);
+                    await this.characteristic.writeValue(data);
+                    debug("Sent command:", cmd);
+                } else {
+                    debug("Not connected to any device.");
                 }
             }
-        </style>
-    </head>
-    <body>
-        <div id="debug"></div>
-        <div class="buttons">
-            <span class="cmd-status">M0,0</span>
-            <button disabled class="connect-btn btn" onclick="connectBLE()">Prisijungti</button>
-            <button class="fullscreen-btn btn" title="Go fullscreen">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"/></svg>
-            </button>
-        </div>
-        <div id="controlbuttons">
-            <button class="connect-btn btn" onclick="sendBLECmd('alert')">Avarinis</button>
-            <button class="connect-btn btn" onclick="sendBLECmd('getready')">Pasiruošk</button>
-            <button class="connect-btn btn" onclick="sendBLECmd('fire')">Pulk</button>
-        </div>
 
-        <script>
-const cmdStatusEl = document.querySelector('.cmd-status')
-const connectBtn = document.querySelector('.connect-btn')
-const debugEl = document.getElementById('debug')
-
-class BLERobot {
-    BLE_SERVICE_UUID = "99b96fd7-dd0e-49cd-b255-f7b692c3de5e"
-    BLE_CHARACTERISTIC_UUID = "4fce1dff-9151-498f-aa72-581f3f9241f3"
-
-    constructor() {
-        this.name = ''
-        this.left = 0
-        this.right = 0
-        this.servoLeft = 0
-        this.servoRight = 0
-        this.periodicReconnectTimer = null
-        
-        this.encoder = new TextEncoder()
-
-        this._connected = false
-    }
-
-    async _connect() {
-        const server = await this.device.gatt.connect()
-        this.service = await server.getPrimaryService(this.BLE_SERVICE_UUID)
-        this.characteristic = await this.service.getCharacteristic(this.BLE_CHARACTERISTIC_UUID)
-        this.server = server;
-        debugClear();
-        debug(`Prisijungiau prie roboto „${this.device.name}“`) 
-        debug(`Service: ${this.service.uuid}`);
-        debug(`Characteristic: ${this.characteristic.uuid}`);
-
-        const characteristics = await this.service.getCharacteristics();
-        debug(`Found ${characteristics.length} characteristic(s) for service ${this.service.uuid}:`);
-        const hasRead = this.characteristic.properties.read;
-        const hasWrite = this.characteristic.properties.write;
-
-        debug(`READ: ${hasRead ? "Yes" : "No"}`);
-        debug(`WRITE: ${hasWrite ? "Yes" : "No"}`);
-        
-        this.name = this.device.name
-        connectBtn.textContent = this.name
-        this._connected = true
-    }
-
-    async _periodicReconnect(name) {
-        if (name != this.name) return
-        try {
-            await this._connect()
-        } catch (e) {
-            if (name != this.name) return
-            debug(`Nepavyko prisijungti prie roboto „${this.device.name}“, dar bandysiu po 1s`)
-            this.periodicReconnectTimer = setTimeout(() => this._periodicReconnect(), 1000)
+            disconnect() {
+                if (this.device && this.device.gatt.connected) {
+                    this.device.gatt.disconnect();
+                    debug("Disconnected from device:", this.device.name);
+                }
+                this.connected = false;
+            }
         }
-    }
 
-    async connect() {
-        try {
-            clearTimeout(this.periodicReconnectTimer)
-            this.device = await navigator.bluetooth.requestDevice({
-                //filters: [{ services: [this.BLE_SERVICE_UUID] }],
-                 acceptAllDevices: true,
-                 optionalServices: [this.BLE_SERVICE_UUID],
-            })
-            this.device.addEventListener('gattserverdisconnected', () => {
-                this._connected = false
-                connectBtn.textContent = 'jungiamės...'
-                this._periodicReconnect(this.name)
-            })
-            await this._connect()
-        } catch (e) {
-            debug('Klaida jungiantis prie roboto:', e)
+        const robot = new BLERobot();
+
+        function connectBLE() {
+            if (robot.connected) {
+                robot.disconnect();
+            } else {
+                robot.connect();
+            }
         }
-    }
 
-    get connected() {
-        return this._connected && this.server?.connected
-    }
-
-    disconnect() {
-        clearTimeout(this.periodicReconnectTimer)
-        connectBtn.textContent = 'Prisijungti'
-        if (this.connected) {
-            this.server?.disconnect()
+        function sendBLECmd(cmd) {
+            robot.sendCommand(cmd);
         }
-    }
 
-    async _send(cmd) {
-        cmdStatusEl.textContent = cmd
-
-        if (this.connected) {
-            const data = this.encoder.encode(cmd);
-            await this.characteristic.writeValue(data)
-            return true
+        function debug(...messages) {
+            const div = document.createElement("div");
+            div.textContent = messages.join(" ");
+            debugEl.appendChild(div);
         }
-        return false
-    }
-}
-
-async function checkRequirements() {
-    if (!navigator.bluetooth) {
-        debug("Jūsų naršyklė nepalaiko Bluetooth. Pabandykite su Google Chrome.")
-        return
-    }
-    if (!await navigator.bluetooth.getAvailability()) {
-        debug("Nerastas Bluetooth įrenginys arba trūksta leidimo jį naudoti.")
-        return
-    }
-    connectBtn.disabled = false
-    debug("Labas! Spausk „Prisijungti“ ir prisijunk prie savo roboto.")
-}
-
-function setupFullscreenControl() {
-    function requestFullscreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen()
-        } else {
-            document.exitFullscreen()
-        }
-    }
-    document.body.addEventListener('dblclick', (event) => {
-        if (!document.fullscreenElement) requestFullscreen()
-    })
-    const fullscreenBtn = document.querySelector('.fullscreen-btn')
-    fullscreenBtn.addEventListener('click', requestFullscreen)
-}
-
-function debug(...args) {
-    const div = document.createElement('div')
-    txt = args.map(a => a === undefined ? 'undefined' : (a === null ? 'null' : a.valueOf())).join('  ')
-    div.textContent = txt
-    debugEl.insertBefore(div, debugEl.firstChild)
-}
-
-function debugClear() {
-    debugEl.innerHTML = ''
-}
-
-const robot = new BLERobot()
-function connectBLE() {
-    if (robot.connected) {
-        robot.disconnect()
-    }
-    robot.connect()
-}
-
-function sendBLECmd(cmd) {
-    //if (robot.connected) {
-        robot._send(cmd)
-    //}
-}
-
-checkRequirements()
-setupFullscreenControl()
-
-window.addEventListener("beforeunload", (event) => {
-    robot.disconnect()
-    debug('Bye bye')
-})
-
-        </script>
-    </body>
+    </script>
+</body>
 </html>
